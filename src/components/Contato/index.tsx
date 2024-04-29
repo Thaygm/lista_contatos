@@ -1,23 +1,34 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import * as S from './styles'
-import * as enums from '../../utils/enums/Contato'
+import { remover, editar } from '../../stores/reducers/contatos'
+import { useDispatch } from 'react-redux'
+import ContatoClass from '../../models/contatos'
 
-type ContatoProps = {
-  nomeCompleto: string
-  telefone: string
-  email: string
-  prioridade: enums.Prioridade
-  tipo: enums.Tipo
-}
+type ContatoProps = ContatoClass
 
 const Contato = ({
   nomeCompleto,
   prioridade,
-  telefone,
-  email,
-  tipo
+  telefone: telefoneOriginal,
+  email: emailOriginal,
+  tipo,
+  id
 }: ContatoProps) => {
-  const [estaEditado, setEstaEditado] = useState(false)
+  const dispatch = useDispatch()
+  const [estaEditando, setEstaEditando] = useState(false)
+  const [telefone, setTelefone] = useState('')
+  const [email, setEmail] = useState('')
+
+  useEffect(() => {
+    setTelefone(telefoneOriginal)
+    setEmail(emailOriginal)
+  }, [telefoneOriginal, emailOriginal])
+
+  function cancelarEdicao() {
+    setEstaEditando(false)
+    setTelefone(telefoneOriginal)
+    setEmail(emailOriginal)
+  }
 
   return (
     <S.Card>
@@ -28,20 +39,46 @@ const Contato = ({
       <S.Tag parametro="tipo" tipo={tipo}>
         {tipo}
       </S.Tag>
-      <S.Telefone value={telefone} />
-      <S.Email value={email} />
+      <S.Telefone
+        disabled={!estaEditando}
+        value={telefone}
+        onChange={(evento) => setTelefone(evento.target.value)}
+      />
+      <S.Email
+        disabled={!estaEditando}
+        value={email}
+        onChange={(evento) => setEmail(evento.target.value)}
+      />
       <S.BarraAcoes>
-        {estaEditado ? (
+        {estaEditando ? (
           <>
-            <S.BotaoSalvar>Salvar</S.BotaoSalvar>
-            <S.BotaoCancelarRemover onClick={() => setEstaEditado(false)}>
+            <S.BotaoSalvar
+              onClick={() => {
+                dispatch(
+                  editar({
+                    nomeCompleto,
+                    prioridade,
+                    telefone,
+                    email,
+                    tipo,
+                    id
+                  })
+                )
+                setEstaEditando(false)
+              }}
+            >
+              Salvar
+            </S.BotaoSalvar>
+            <S.BotaoCancelarRemover onClick={cancelarEdicao}>
               Cancelar
             </S.BotaoCancelarRemover>
           </>
         ) : (
           <>
-            <S.Botao onClick={() => setEstaEditado(true)}>Editar</S.Botao>
-            <S.BotaoCancelarRemover>Remover</S.BotaoCancelarRemover>
+            <S.Botao onClick={() => setEstaEditando(true)}>Editar</S.Botao>
+            <S.BotaoCancelarRemover onClick={() => dispatch(remover(id))}>
+              Remover
+            </S.BotaoCancelarRemover>
           </>
         )}
       </S.BarraAcoes>
